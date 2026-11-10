@@ -1,0 +1,15 @@
+# Python virtual environment
+.venv/
+
+# Personal node data
+nodes.json
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# macOS files
+.DS_Store
+
+#vscode settings
+.vscode
