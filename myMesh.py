@@ -83,7 +83,7 @@ while True:
 				nodes.append(node)
 				registered_node +=1
 		show_nodes(nodes)
-		print(f"Registration Summary:\n {attempted_node} new nodes\n {RED}{dupe_node} duplicate nodes{RESET}\n {registered_node} nodes registered\n")
+		print(f"Registration Summary:\n {attempted_node} attempted nodes\n {RED}{dupe_node} duplicate nodes{RESET}\n {registered_node} nodes registered\n")
 		#TODO if there are 0 dupe nodes, we don't need red text
 	elif choice == "2":
 		show_nodes(nodes)
