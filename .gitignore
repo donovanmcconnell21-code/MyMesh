@@ -3,6 +3,7 @@
 
 # Personal node data
 nodes.json
+telemetry_history.json
 
 # Python cache files
 __pycache__/
