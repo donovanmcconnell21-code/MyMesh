@@ -10,5 +10,11 @@
 - [ ] Build historical telemetry graphs — Show solar generation, battery voltage, and other measurements over time.
 - [x] Save node registrations - Add a manual Save Nodes option
 - [ ] Add a delete node option
-- [ ] Separate monitoring, current telemetry, and historical telemetry views
+- [x] Separate monitoring, current telemetry, and historical telemetry views
 - [ ] Clean up float presicion
+- [ ] Handle telemetry request timeouts without stopping monitoring.
+- [ ] Prevent duplicate telemetry records.
+- [ ] Protect telemetry history from incomplete JSON writes.
+- [ ] Make file paths independent of working directory.
+- [ ] Add README.md and Python dependency list.
+- [ ] Add automated tests using simulated telemetry packets.
