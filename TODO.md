@@ -11,3 +11,4 @@
 - [x] Save node registrations - Add a manual Save Nodes option
 - [ ] Add a delete node option
 - [ ] Separate monitoring, current telemetry, and historical telemetry views
+- [ ] Clean up float presicion

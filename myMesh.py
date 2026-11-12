@@ -76,13 +76,6 @@ def show_node_telemetry(nodes):
 		print_error(f"\nERROR: Could not connect to a Meshtastic device.\n")
 		return
 	try:
-		listener_test.nodes = nodes
-		pub.subscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
-		for node in nodes:
-			has_solar = node.get("has_solar", False)
-			if has_solar:
-				listener_test.request_telemetry(radio, node["ID"])
-
 		known_nodes = radio.nodes
 
 		print(f"\nMyMesh - My Node Telemetry")
@@ -131,8 +124,6 @@ def show_node_telemetry(nodes):
 			print(f"Hops away: {hops_away}")
 			print(f"Via MQTT? {via_mqtt}")
 	finally:
-		pub.unsubscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
-		print(f"Finished listening\n")
 		radio.close()
 		print(f"Serial connection closed!\n")
 
@@ -140,6 +131,28 @@ def save_nodes():
 	with open("nodes.json", "w") as file:
 		json.dump(nodes, file, indent=4)
 	print(f"\nNodes Saved to nodes.json !\n")
+
+def start_monitoring(nodes):
+	radio = meshtastic.serial_interface.SerialInterface()
+	connection = radio.devPath
+	if connection is None:
+		print_error(f"\nERROR: Could not connect to a Meshtastic device.\n")
+		return
+	try:
+		print_success(f"Starting monitoring nodes...")
+		listener_test.nodes = nodes
+		pub.subscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
+		for node in nodes:
+			has_solar = node.get("has_solar", False)
+			if has_solar:
+				listener_test.request_telemetry(radio, node["ID"])
+
+		input("Press ENTER to stop monitoring... ")
+	finally:
+		pub.unsubscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
+		print(f"Finished listening\n")
+		radio.close()
+		print(f"Serial connection closed!\n")
 
 #MAIN CODE
 print("Welcome to MyMesh!")
@@ -149,8 +162,9 @@ while True:
 	print("2. Show Nodes")
 	print("3. Show Node Telemetry")
 	print("4. Save Nodes")
-	print("5. Save and Exit")
-	print("6. Don't Save and Exit")
+	print("5. Start Monitoring")
+	print("6. Save and Exit")
+	print("7. Don't Save and Exit")
 	choice = input("Please choose a menu option: ")
 	if choice == "1":
 		attempted_node = 0
@@ -196,9 +210,11 @@ while True:
 	elif choice == "4":
 		save_nodes()
 	elif choice == "5":
+		start_monitoring(nodes)
+	elif choice == "6":
 		save_nodes()
 		break
-	elif choice == "6":
+	elif choice == "7":
 		break
 	else:
 		invalid_option()
