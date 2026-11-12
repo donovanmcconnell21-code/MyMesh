@@ -2,10 +2,13 @@
 import json
 import meshtastic.serial_interface
 from datetime import datetime
+import listener_test
+from pubsub import pub
 
 #CONSTANTS
 RED = "\033[31m"
 RESET = "\033[0m"
+GREEN = "\033[32m"
 
 #GET FILE
 try:
@@ -20,7 +23,7 @@ def show_nodes(nodes):
 	print("=====")
 	print("Registered Nodes:")
 	for node in nodes:
-		print(f"{node["name"]} - {node["ID"]}")
+		print(f"{node["name"]} - {node["ID"]} - has_solar: {node.get("has_solar", False)}")
 	print("=====")
 	print()
 
@@ -39,14 +42,29 @@ def register_node():
 			break
 		else:
 			print_error(f"\n EMPTY NODE ID IS INVALID\n")
+	while True:
+		has_solar = input(f"Does this node have solar? (y/n) ")
+		has_solar = has_solar.strip().lower()
+		if has_solar == "y":
+			has_solar = True
+			break
+		elif has_solar == "n":
+			has_solar = False
+			break
+		else:
+			print_error("INVALID RESPONSE - Please enter y or n")
 	node = {
 		"name": 	node_name,
-		"ID":	node_id
+		"ID":	node_id,
+		"has_solar": has_solar
 	}
 	return node
 
 def print_error(text):
 	print(f"{RED}{text}{RESET}")
+
+def print_success(text):
+	print(f"{GREEN}{text}{RESET}")
 
 def invalid_option():
 	print_error(f"\n===!===\nINVALID OPTION\n===!===\n")
@@ -58,6 +76,13 @@ def show_node_telemetry(nodes):
 		print_error(f"\nERROR: Could not connect to a Meshtastic device.\n")
 		return
 	try:
+		listener_test.nodes = nodes
+		pub.subscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
+		for node in nodes:
+			has_solar = node.get("has_solar", False)
+			if has_solar:
+				listener_test.request_telemetry(radio, node["ID"])
+
 		known_nodes = radio.nodes
 
 		print(f"\nMyMesh - My Node Telemetry")
@@ -106,8 +131,15 @@ def show_node_telemetry(nodes):
 			print(f"Hops away: {hops_away}")
 			print(f"Via MQTT? {via_mqtt}")
 	finally:
+		pub.unsubscribe(listener_test.on_receive, "meshtastic.receive.telemetry")
+		print(f"Finished listening\n")
 		radio.close()
 		print(f"Serial connection closed!\n")
+
+def save_nodes():
+	with open("nodes.json", "w") as file:
+		json.dump(nodes, file, indent=4)
+	print(f"\nNodes Saved to nodes.json !\n")
 
 #MAIN CODE
 print("Welcome to MyMesh!")
@@ -116,7 +148,9 @@ while True:
 	print("1. Register node(s)")
 	print("2. Show Nodes")
 	print("3. Show Node Telemetry")
-	print("4. Save and Exit")
+	print("4. Save Nodes")
+	print("5. Save and Exit")
+	print("6. Don't Save and Exit")
 	choice = input("Please choose a menu option: ")
 	if choice == "1":
 		attempted_node = 0
@@ -149,15 +183,22 @@ while True:
 				nodes.append(node)
 				registered_node +=1
 		show_nodes(nodes)
-		print(f"Registration Summary:\n {attempted_node} attempted nodes\n {RED}{dupe_node} duplicate nodes{RESET}\n {registered_node} nodes registered\n")
-		#TODO if there are 0 dupe nodes, we don't need red text
+		print(
+		f"Registration Summary:\n"
+		f"{attempted_node} attempted nodes\n"
+		f"{f'{RED}{dupe_node} duplicate nodes{RESET}' if dupe_node != 0 else f'{GREEN}{dupe_node} duplicate nodes'}{RESET}\n"
+		f"{registered_node} nodes registered\n"
+		)
 	elif choice == "2":
 		show_nodes(nodes)
 	elif choice == "3":
 		show_node_telemetry(nodes)
 	elif choice == "4":
-		with open("nodes.json", "w") as file:
-			json.dump(nodes, file, indent=4)
+		save_nodes()
+	elif choice == "5":
+		save_nodes()
+		break
+	elif choice == "6":
 		break
 	else:
 		invalid_option()
