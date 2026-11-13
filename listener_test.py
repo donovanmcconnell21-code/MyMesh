@@ -1,7 +1,15 @@
-import meshtastic.serial_interface
+import meshtastic.serial_interface, json, os
 from pubsub import pub
-import json
 from datetime import datetime
+from collections import deque
+
+RED = "\033[31m"
+RESET = "\033[0m"
+GREEN = "\033[32m"
+MAX_RECENT_PACKETS = 100
+
+seen_packets = set()
+recent_packets = deque()
 
 try:
 	with open("telemetry_history.json", "r") as file:
@@ -16,6 +24,12 @@ try:
 except FileNotFoundError:
 	nodes = []
 
+def print_error(text):
+	print(f"{RED}{text}{RESET}")
+
+def print_success(text):
+	print(f"{GREEN}{text}{RESET}")
+
 def request_telemetry(radio, node_id):
 	print(f"Requesting power telemetry from {node_id}...")
 	radio.sendTelemetry(
@@ -26,13 +40,28 @@ def request_telemetry(radio, node_id):
 	print(f"Requested Telemetry")
 
 def save_telemetry_history():
-	with open("telemetry_history.json", "w") as file:
+	with open("telemetry_history.json.tmp", "w") as file:
 		json.dump(telemetry_history, file, indent=4)
-		print(f"\nSaved file!\n")
+	os.replace("telemetry_history.json.tmp", "telemetry_history.json")	
+	print(f"\nSaved file!\n")
 
 def on_receive(packet, interface):
+	print(f"Packet ID: {packet.get('id', 'Unknown')}")
+	packet_id = packet.get("id")
+	packet_key = (packet_id, packet.get("fromId"))
 	for node in nodes:
+		#print(packet_id)
 		if packet["fromId"] == node["ID"]:
+			if packet_key in (seen_packets) and packet_id is not None:
+				print_error(f"Duplicate packet. Skipping... ")
+				continue
+			if packet_id is not None:
+				seen_packets.add(packet_key)
+				recent_packets.append(packet_key)
+				if len(recent_packets) > MAX_RECENT_PACKETS:
+					seen_packets.discard(recent_packets[0])
+					recent_packets.popleft()
+			print(f"Num of seen packets {len(seen_packets)}")
 			print(f"\nNode ID: {packet["fromId"]}")
 			print(f"My name: {node["name"]}")
 			has_solar = node.get("has_solar", False)
@@ -53,6 +82,7 @@ def on_receive(packet, interface):
 						solar_mW = (solar_voltage * solar_current)
 						telemetry_record = {
 							"node_id": packet["fromId"],
+							"packet_id": packet.get("id"),
 							"timestamp": timestamp,
 							"solar_voltage": solar_voltage,
 							"solar_current": solar_current,
@@ -75,6 +105,7 @@ def on_receive(packet, interface):
 						print(f"Battery Level is None")
 					telemetry_record = {
 						"node_id": packet["fromId"],
+						"packet_id": packet.get("id"),
 						"timestamp": timestamp,
 						"voltage": battery_voltage,
 						"battery_level": battery_level,

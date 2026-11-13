@@ -145,7 +145,10 @@ def start_monitoring(nodes):
 		for node in nodes:
 			has_solar = node.get("has_solar", False)
 			if has_solar:
-				listener_test.request_telemetry(radio, node["ID"])
+				try:
+					listener_test.request_telemetry(radio, node["ID"])
+				except Exception as error:
+					print_error(f"ERROR: {node["name"]}: {error}")
 
 		input("Press ENTER to stop monitoring... ")
 	finally:

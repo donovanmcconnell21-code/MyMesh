@@ -12,9 +12,19 @@
 - [ ] Add a delete node option
 - [x] Separate monitoring, current telemetry, and historical telemetry views
 - [ ] Clean up float presicion
-- [ ] Handle telemetry request timeouts without stopping monitoring.
-- [ ] Prevent duplicate telemetry records.
+- [x] Handle telemetry request timeouts without stopping monitoring.
+- [x] Prevent duplicate telemetry records.
 - [ ] Protect telemetry history from incomplete JSON writes.
 - [ ] Make file paths independent of working directory.
 - [ ] Add README.md and Python dependency list.
 - [ ] Add automated tests using simulated telemetry packets.
+- [ ] except Exception is acceptable for this exercise, but eventually we'll narrow it to the specific Meshtastic exceptions we expect.
+- [x] Limit in-memory duplicate detection to recent packets.
+- [ ] Verify atomic telemetry-history saving.
+  - Back up telemetry_history.json.
+  - Confirm new measurements are saved.
+  - Confirm telemetry_history.json.tmp disappears after a successful save.
+- [ ] Handle missing radio connections in standalone listener_test.py.
+  - Check radio.devPath before requesting telemetry.
+  - Skip requests when no serial device is connected.
+  - Exit cleanly without calling close() on an uninitialized connection.
