@@ -19,3 +19,6 @@ __pycache__/
 
 #testing
 module*
+
+#node info
+node-info.txt

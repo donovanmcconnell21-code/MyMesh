@@ -20,7 +20,7 @@
 - [ ] Add automated tests using simulated telemetry packets.
 - [ ] except Exception is acceptable for this exercise, but eventually we'll narrow it to the specific Meshtastic exceptions we expect.
 - [x] Limit in-memory duplicate detection to recent packets.
-- [ ] Verify atomic telemetry-history saving.
+- [x] Verify atomic telemetry-history saving.
   - Back up telemetry_history.json.
   - Confirm new measurements are saved.
   - Confirm telemetry_history.json.tmp disappears after a successful save.
@@ -28,3 +28,13 @@
   - Check radio.devPath before requesting telemetry.
   - Skip requests when no serial device is connected.
   - Exit cleanly without calling close() on an uninitialized connection.
+- [x] Handle incoming telemetry packets missing a fromId.
+## Future Enhancements
+
+- [ ] Add Bluetooth LE connection support to MyMesh.
+- [ ] Allow users to select USB, BLE, or TCP connections.
+- [ ] Investigate node configuration management through Python.
+- [ ] Design reusable configuration profiles for different node types.
+- [ ] Support exporting, backing up, and applying node configurations.
+- [ ] figure out how to get a node to broadcast a dad joke each morning from icanhazdadjoke
+- [ ] add a "search settings" feature

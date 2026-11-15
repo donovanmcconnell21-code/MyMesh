@@ -1,7 +1,6 @@
 import listener_test
 
 packet = {
-	"fromId": "!c959ed45",
 	"id": 321654987,
 	"decoded": {
 		"telemetry": {}

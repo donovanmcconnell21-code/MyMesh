@@ -48,7 +48,11 @@ def save_telemetry_history():
 def on_receive(packet, interface):
 	print(f"Packet ID: {packet.get('id', 'Unknown')}")
 	packet_id = packet.get("id")
-	packet_key = (packet_id, packet.get("fromId"))
+	packet_from_id = packet.get("fromId")
+	packet_key = (packet_id, packet_from_id)
+	if packet_from_id is None:
+		print_error(f"Packet missing from ID... Skipping packet...")
+		return
 	for node in nodes:
 		#print(packet_id)
 		if packet["fromId"] == node["ID"]:
@@ -119,13 +123,16 @@ if __name__ == "__main__":
 	pub.subscribe(on_receive, "meshtastic.receive.telemetry")
 
 	radio = meshtastic.serial_interface.SerialInterface()
-
-	for node in nodes:
-		has_solar = node.get("has_solar", False)
-		if has_solar:
-			request_telemetry(radio, node["ID"])
-
-	input("Press ENTER to stop listening...")
-	print()
-
-	radio.close()
+	connection = radio.devPath
+	if connection is None:
+		print_error(f"\nERROR: Could not connect to a Meshtastic device.\n")
+	else:
+		try:
+			for node in nodes:
+				has_solar = node.get("has_solar", False)
+				if has_solar:
+					request_telemetry(radio, node["ID"])
+			input("Press ENTER to stop listening...")
+			print()
+		finally:
+			radio.close()

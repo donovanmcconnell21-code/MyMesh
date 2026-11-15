@@ -166,8 +166,9 @@ while True:
 	print("3. Show Node Telemetry")
 	print("4. Save Nodes")
 	print("5. Start Monitoring")
-	print("6. Save and Exit")
-	print("7. Don't Save and Exit")
+	print("6. Configure Node")
+	print("7. Save and Exit")
+	print("8. Exit (No Save)")
 	choice = input("Please choose a menu option: ")
 	if choice == "1":
 		attempted_node = 0
@@ -214,10 +215,10 @@ while True:
 		save_nodes()
 	elif choice == "5":
 		start_monitoring(nodes)
-	elif choice == "6":
+	elif choice == "7":
 		save_nodes()
 		break
-	elif choice == "7":
+	elif choice == "8":
 		break
 	else:
 		invalid_option()
