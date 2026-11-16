@@ -1,83 +1,103 @@
 # MyMesh
 
-**MyMesh** is a work-in-progress, Python-based command-line application for managing a personal [Meshtastic](https://meshtastic.org/) node list and collecting device and solar telemetry over a connected Meshtastic radio.
+**MyMesh** is an experimental Python command-line project for working with personal [Meshtastic](https://meshtastic.org/) nodes. It currently supports local node registration, telemetry monitoring, and a separate CLI for viewing and changing selected radio settings.
 
-The project is being developed as a hands-on Python learning project. It is functional, but **experimental**: expect rough edges, incomplete features, and changes as development continues.
+This is also a hands-on Python learning project. Features are being added incrementally, and the code is **not yet production-ready**.
 
-## What it does today
+## Current features
 
-- **Register and manage a local node list** with friendly names, Meshtastic node IDs, and a `has_solar` setting.
-- **Detect duplicate IDs** during registration and display registered nodes.
-- **Save node registrations on demand**, save and exit, or exit without saving new changes.
-- **Show a node telemetry snapshot** from the connected radio's node database, including available battery voltage, battery status, signal-to-noise ratio (SNR), last-heard time, and other mesh information.
-- **Start a live monitoring session** that listens for incoming telemetry until you press Enter.
-- **Request power telemetry** from registered nodes marked `has_solar: true` when monitoring starts.
-- **Record device and solar measurements** to a local JSON history file, including timestamps and node IDs.
+### Main application — `myMesh.py`
 
-Live monitoring and viewing a snapshot are deliberately separate modes. Historical graphing and a persistent background monitor are planned, but **not implemented yet**.
+- Register Meshtastic nodes with a friendly name, node ID, and `has_solar` flag.
+- Reject duplicate node IDs, view the registered list, and save registrations to `nodes.json`.
+- View a snapshot of registered nodes from the connected radio's node database, including available battery, voltage, SNR, last-heard, hop-count, and MQTT information.
+- Run a live monitoring session and request power telemetry from registered solar nodes.
+- Capture incoming device and solar measurements in `telemetry_history.json`.
+- Skip duplicate packet IDs seen recently during the current process (a bounded 100-packet cache).
+- Save telemetry history via a temporary file and atomic replacement to reduce the risk of a partially written history file.
+
+The snapshot and live monitoring modes are separate. **Historical charts and a historical browsing menu are not implemented yet.**
+
+### Node configurator — `configure_node.py`
+
+The standalone configurator uses nested terminal menus and a **USB serial connection** to the attached Meshtastic node.
+
+| Settings area | Available actions |
+| --- | --- |
+| LoRa | View preset usage, hop limit, TX enablement, and configured TX power; change hop limit (1–7) |
+| Device | View role, rebroadcast mode, NodeInfo broadcast interval, buzzer GPIO, and timezone definition; change device role |
+
+Configuration changes require confirmation. Both implemented editors detect when the requested value already matches the current value. Device roles are displayed by their protobuf enum names, and a confirmed role write exits the menus because the node may reboot or disconnect. A fresh connection is needed to verify that the device retained a change.
+
+**Current integration gap:** the main application's menu displays `6. Configure Node`, but that selection is **not yet wired up** in `myMesh.py`. Run `configure_node.py` directly for now. Other configuration categories, settings search, profiles, backups, and BLE/TCP connections are future work.
 
 ## Requirements
 
-- **Python 3.12 or newer** (developed using Python 3.13).
-- A Meshtastic-compatible device connected over USB serial, with the device and its mesh configured appropriately.
-- Python packages: [`meshtastic`](https://pypi.org/project/meshtastic/) and [`PyPubSub`](https://pypi.org/project/PyPubSub/).
+- **Python 3.12 or newer.** Some existing f-strings rely on syntax supported in Python 3.12+; the supplied development environment uses Python 3.13.
+- A compatible Meshtastic device connected to the computer over USB serial, with a working firmware/configuration setup.
+- The Python packages `meshtastic` and `PyPubSub`.
 
-The reviewed development environment uses `meshtastic` 2.7.11 and `PyPubSub` 4.0.7. Other versions have not been verified for this checkpoint.
+Versions found in the reviewed development environment: `meshtastic==2.7.11` and `PyPubSub==4.0.7`. These are observed development versions, not a formal compatibility matrix or a requirements lockfile.
 
-## Getting started
+## Setup
 
-From the project directory:
+Run these commands from the MyMesh project directory:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install meshtastic PyPubSub
-python myMesh.py
 ```
 
-On Windows, activate the virtual environment with `.venv\Scripts\activate` instead.
+On Windows, activate with `.venv\Scripts\activate` instead. The application currently assumes that relative JSON paths resolve from your **current working directory**, so launch it from the repository root.
 
-**Run MyMesh from the project directory.** The current version reads and writes its JSON files relative to the terminal's working directory.
+## Run the applications
 
-### Menu
+### Main MyMesh menu
+
+```bash
+python myMesh.py
+```
 
 | Option | Action |
 | --- | --- |
 | 1 | Register node(s) |
 | 2 | Show registered nodes |
 | 3 | Show node telemetry snapshot |
-| 4 | Save nodes without exiting |
+| 4 | Save nodes |
 | 5 | Start monitoring |
-| 6 | Save and exit |
-| 7 | Exit without saving node-list changes |
+| 6 | Configure node — **listed but not connected yet** |
+| 7 | Save and exit |
+| 8 | Exit without saving node-list changes |
 
-Select **5 — Start Monitoring** to keep the radio connected, receive telemetry events, and save incoming measurements. Press **Enter** to end the monitoring session and return to the menu. A monitoring session requires MyMesh to remain running.
+With option 5, the program requests power telemetry from solar-capable registered nodes and listens for incoming telemetry until you press **Enter**. Monitoring only runs while the program remains open. Exiting without saving node registrations does **not** undo telemetry data already written during monitoring.
 
-## Node configuration and telemetry data
+### Standalone node configuration
 
-MyMesh creates `nodes.json` when you choose a save option. Each registration has a friendly name, a node ID, and a boolean indicating whether the node has solar telemetry. For example, with **placeholder** IDs:
+```bash
+python configure_node.py
+```
+
+Choose **LoRa Settings** or **Device Settings** and use the nested menus to inspect settings or make supported changes. For device-role changes, choose a role only after understanding its effect on message rebroadcasting and connectivity. Some writes can reboot the radio. Back up important settings separately before experimenting.
+
+## Local data
+
+`nodes.json` contains registrations like the following **fictional examples**:
 
 ```json
 [
-  {
-    "name": "Portable Node",
-    "ID": "!00000001",
-    "has_solar": false
-  },
-  {
-    "name": "Solar Node",
-    "ID": "!22222222",
-    "has_solar": true
-  }
+  {"name": "Portable Node", "ID": "!00000001", "has_solar": false},
+  {"name": "Solar Node", "ID": "!22222222", "has_solar": true}
 ]
 ```
 
-Incoming measurements are appended to an in-memory list and saved in `telemetry_history.json` as JSON records. Examples of the two record types:
+`telemetry_history.json` contains records with a local ISO timestamp, node ID, packet ID (when present), type, and measurements. For example:
 
 ```json
 {
   "node_id": "!00000001",
-  "timestamp": "2026-11-12T09:30:00-06:00",
+  "packet_id": 123456789,
+  "timestamp": "2026-11-15T10:30:00-06:00",
   "voltage": 4.1,
   "battery_level": null,
   "type": "device"
@@ -87,7 +107,8 @@ Incoming measurements are appended to an in-memory list and saved in `telemetry_
 ```json
 {
   "node_id": "!22222222",
-  "timestamp": "2026-11-12T09:30:00-06:00",
+  "packet_id": 123456790,
+  "timestamp": "2026-11-15T10:31:00-06:00",
   "solar_voltage": 4.4,
   "solar_current": 85.0,
   "solar_mW": 374.0,
@@ -95,36 +116,37 @@ Incoming measurements are appended to an in-memory list and saved in `telemetry_
 }
 ```
 
-Solar measurement handling currently expects voltage and current in **power metrics channel 3** (`ch3Voltage` in volts and `ch3Current` in milliamps), as used by the hardware in this project. Power is calculated in milliwatts (`V × mA = mW`). Other solar monitoring setups may need adjustments.
+Solar measurement handling currently assumes `powerMetrics.ch3Voltage` is in volts and `powerMetrics.ch3Current` is in milliamps. Milliwatts are calculated as `volts × milliamps`. This channel mapping is specific to the solar-node setup used during development; other hardware may use different channels. A battery level of `101` is stored as JSON `null` rather than a percentage.
 
-The Meshtastic battery-level value `101` is stored as JSON `null` rather than as a battery percentage.
+The telemetry listener currently loads and rewrites the full history list when saving. Duplicate prevention is limited to recently seen packet IDs within the running process; it does not deduplicate across restarts.
 
-Both `nodes.json` and `telemetry_history.json` are excluded by `.gitignore` because they contain personal mesh information. **Do not publish these files without reviewing their contents.**
+**Privacy:** `.gitignore` excludes the local node list, telemetry history, node-info export, and virtual environment. Do not upload the complete working directory or an archive containing those files. Review development scripts for hard-coded node IDs before publishing them, and treat exported Meshtastic configurations as potentially sensitive because they may include channel keys or location settings.
 
 ## Project files
 
 | File | Purpose |
 | --- | --- |
-| `myMesh.py` | Main CLI, node registration, telemetry snapshots, and monitoring controls |
-| `listener_test.py` | Telemetry callback, solar telemetry requests, and JSON history saving (currently imported by the main application) |
-| `TODO.md` | Development tasks and known improvements |
-| `force_metrics.py`, `radio_test.py`, `telemetry_test.py` | Earlier development and hardware experiments |
+| `myMesh.py` | Main menu, node registration, node snapshots, and monitoring sessions |
+| `configure_node.py` | Standalone nested CLI for viewing/changing selected LoRa and Device settings |
+| `listener_test.py` | Telemetry callback, power-metrics requests, and JSON history persistence; imported by `myMesh.py` |
+| `duplicate_test.py` | Manual duplicate-packet experiments; not an automated test suite |
+| `radio_test.py`, `telemetry_test.py`, `force_metrics.py` | Hardware/development experiments; inspect before running because they can access a connected node |
+| `TODO.md` | Current backlog, deferred improvements, and future ideas |
 
-## Current limitations and plans
+## Known limitations
 
-MyMesh is still under development. Known areas for improvement include:
+- The configuration menu is not yet reachable through main-menu option 6.
+- Settings coverage is limited to two editable fields; the configurator is not a complete replacement for the Meshtastic app.
+- There is no automatic config backup, write-error recovery, or post-reboot verification.
+- JSON loading does not yet recover gracefully from malformed files, and telemetry history will need a more scalable storage approach.
+- File paths are relative to the launch directory; incoming telemetry output can overlap interactive prompts.
+- No automated test suite is established; functionality has been tested manually with a USB-connected node and simulated packets.
+- Bluetooth, TCP, remote configuration, historical charts, and always-on Raspberry Pi monitoring are not implemented.
 
-- Handling unresponsive nodes and delayed telemetry requests gracefully.
-- Preventing duplicate telemetry records and making history writes safer as data grows.
-- Improving concurrent terminal output while telemetry arrives.
-- Supporting node deletion and historical telemetry graphs.
-- Making file paths independent of the launch directory.
-- Adding automated tests and eventually supporting long-running monitoring on a Raspberry Pi.
-
-See [`TODO.md`](TODO.md) for the current task list.
+See [TODO.md](TODO.md) for the working backlog.
 
 ## Authorship and AI disclosure
 
-**The MyMesh application code and other project work were written by the project author.** ChatGPT was used as a learning and code-review assistant during development, but did not write the application code.
+The MyMesh application code is written by the project author as part of learning Python. ChatGPT has been used for instruction, debugging guidance, and code review rather than for writing the application code.
 
-**This `README.md` was generated by ChatGPT (OpenAI)** at the author's request, based on a review of the project at this checkpoint.
+This README was drafted and updated by ChatGPT (OpenAI) at the author's request after reviewing the project files.

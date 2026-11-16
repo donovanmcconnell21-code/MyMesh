@@ -1,4 +1,81 @@
 import meshtastic.serial_interface
+from meshtastic.protobuf import config_pb2
+
+def change_device_role(radio):
+	device = radio.localNode.localConfig.device
+	device_role = config_pb2.Config.DeviceConfig.Role.Name(device.role)
+	roles = config_pb2.Config.DeviceConfig.Role.keys()
+	print(f"Current Role: {device_role}")
+	print()
+	print("Available Roles:")
+	for number, role in enumerate(roles, start=0):
+		print(f"{number}. {role}")
+	while True:
+		try:
+			role_choice = input(f"Select a Device Role (0-{len(roles)-1}): ")
+			role_choice = int(role_choice)
+			if role_choice < 0 or role_choice >= len(roles):
+				raise ValueError
+			break
+		except ValueError:
+			print(f"Invalid selection. Enter a number between 0 and {len(roles)-1}.")
+	print(f"Current role: {device_role}")
+	print(f"Proposed change: {roles[role_choice]}")
+	new_role_value = config_pb2.Config.DeviceConfig.Role.Value(roles[role_choice])
+	if new_role_value == device.role:
+		print()
+		print("Device is already configured with that role.")
+		return
+	print(f"Meshtastic Role Value: {new_role_value}")
+	while True:
+		accept = input("Accept this change? (y/n): ")
+		accept = accept.strip().lower()
+		if accept == "y":
+			device.role = new_role_value
+			radio.localNode.writeConfig("device")
+			print()
+			print("Device configuration change sent. Node may reboot.")
+			return True
+		elif accept == "n":
+			print()
+			print("Change cancelled.")
+			return False
+		else:
+			print("Please enter y or n")
+
+def show_device_settings(radio):
+	device = radio.localNode.localConfig.device
+	device_role = config_pb2.Config.DeviceConfig.Role.Name(device.role)
+	device_rebroadcast_mode = config_pb2.Config.DeviceConfig.RebroadcastMode.Name(device.rebroadcast_mode)
+	device_broadcast_sec = device.node_info_broadcast_secs
+	device_buzzer_gpio = device.buzzer_gpio
+	device_tzdef = device.tzdef
+	print(f"Device Role: {device_role}")
+	print(f"Device Rebroadcast Mode: {device_rebroadcast_mode}")
+	print(f"Device Broadcast Seconds: {device_broadcast_sec}")
+	print(f"Device Buzzer GPIO: {device_buzzer_gpio}")
+	print(f"Device tzdef: {device_tzdef}")
+
+def device_settings(radio):
+	while True:
+		print()
+		print("MyMesh - Device Settings")
+		print("-------------------------")
+		print("1. View Device Settings")
+		print("2. Change Device Role")
+		print("3. Back")
+		print()
+		choice = input("Please choose a menu option: ")
+		if choice == "1":
+			show_device_settings(radio)
+		elif choice == "2":
+			if change_device_role(radio):
+				return True
+		elif choice == "3":
+			return
+		else:
+			invalid_option()
+
 
 def configuration_menu(radio):
 	while True:
@@ -13,9 +90,8 @@ def configuration_menu(radio):
 		if choice == "1":
 			lora_settings(radio)
 		elif choice == "2":
-			print()
-			print("Device settings coming soon")
-			print()
+			if device_settings(radio):
+				return True
 		elif choice == "3":
 			return
 		else:
@@ -30,6 +106,10 @@ def change_hop_limit(radio):
 	new_hop_limit =  int(new_hop_limit)
 	if new_hop_limit < 1 or new_hop_limit > 7:
 		raise ValueError
+	if current_hop_limit == new_hop_limit:
+		print()
+		print(f"Device is already configured with {current_hop_limit} hops.")
+		return
 	print()
 	print(f"Current hop limit: {current_hop_limit} hops")
 	print(f"Proposed change: {new_hop_limit} hops")
