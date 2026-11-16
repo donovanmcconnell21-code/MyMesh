@@ -1,4 +1,7 @@
 import listener_test
+listener_test.nodes = [
+    {"name": "Test Node", "ID": "!00000001", "has_solar": True}
+]
 
 packet = {
 	"id": 321654987,
@@ -8,7 +11,7 @@ packet = {
 }
 
 packet2 = {
-	"fromId": "!c959ed45",
+	"fromId": "!00000001",
 	"id": 987654321,
 	"decoded": {
 		"telemetry": {}
@@ -16,7 +19,7 @@ packet2 = {
 }
 
 packet3 = {
-	"fromId": "!c959ed45",
+	"fromId": "!00000001",
 	"id": 789456123,
 	"decoded": {
 		"telemetry": {}
@@ -24,7 +27,7 @@ packet3 = {
 }
 
 packet4 = {
-	"fromId": "!c959ed45",
+	"fromId": "!00000001",
 	"id": 123789456,
 	"decoded": {
 		"telemetry": {}

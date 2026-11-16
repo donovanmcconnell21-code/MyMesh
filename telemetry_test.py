@@ -18,9 +18,9 @@ def collect_telemetry():
 		print(f"\nERROR: Could not connect to a Meshtastic device.\n")
 		return
 	try:
-		#FAKE NODE FOR NOW
+		node = input("Enter node ID: ")
 		nodes = {
-			"ID": "!00000001"
+			"ID": node
 		}
 		# TODO PULL FROM nodes.json?
 
