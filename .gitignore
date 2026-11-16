@@ -19,6 +19,7 @@ __pycache__/
 
 #testing
 module*
+duplicate_test.py
 
 #node info
 node-info.txt

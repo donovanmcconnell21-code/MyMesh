@@ -20,7 +20,7 @@ def collect_telemetry():
 	try:
 		#FAKE NODE FOR NOW
 		nodes = {
-			"ID": "!c959ed45"
+			"ID": "!00000001"
 		}
 		# TODO PULL FROM nodes.json?
 
